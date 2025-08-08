@@ -62,42 +62,62 @@ with DAG(
         link_dag=dag
     )
 
-# Шаг создания внешней таблицы Greenplum через SQLExecuteQueryOperator
-items_datamart = SQLExecuteQueryOperator(
-    task_id="items_datamart",
-    conn_id=GREENPLUM_ID,
-    sql=f"""
-        CREATE SCHEMA IF NOT EXISTS {GP_SCHEMA};
-        DROP EXTERNAL TABLE IF EXISTS {GP_SCHEMA}.seller_items CASCADE;
-        CREATE EXTERNAL TABLE {GP_SCHEMA}.seller_items (
-            sku_id BIGINT,
-            title TEXT,
-            category TEXT,
-            brand TEXT,
-            seller TEXT,
-            group_type TEXT,
-            country TEXT,
-            availability_items_count BIGINT,
-            ordered_items_count BIGINT,
-            warehouses_count BIGINT,
-            item_price BIGINT,
-            goods_sold_count BIGINT,
-            item_rate FLOAT8,
-            days_on_sell BIGINT,
-            avg_percent_to_sold BIGINT,
-            returned_items_count INTEGER,
-            potential_revenue BIGINT,
-            total_revenue BIGINT,
-            avg_daily_sales FLOAT8,
-            days_to_sold FLOAT8,
-            item_rate_percent FLOAT8
-        )
-        LOCATION ('pxf://startde-project/vj-volov/seller_items?PROFILE=s3:parquet&SERVER=default')
-        ON ALL
-        FORMAT 'CUSTOM' (FORMATTER='pxfwritable_import')
-        ENCODING 'UTF8';
-    """,
-    split_statements=True,
-)
+    # Шаг создания внешней таблицы Greenplum через SQLExecuteQueryOperator
+    items_datamart = SQLExecuteQueryOperator(
+        task_id="items_datamart",
+        conn_id=GREENPLUM_ID,
+        sql=f"""
+            CREATE SCHEMA IF NOT EXISTS {GP_SCHEMA};
+            DROP EXTERNAL TABLE IF EXISTS {GP_SCHEMA}.seller_items CASCADE;
+            CREATE EXTERNAL TABLE {GP_SCHEMA}.seller_items (
+                sku_id BIGINT,
+                title TEXT,
+                category TEXT,
+                brand TEXT,
+                seller TEXT,
+                group_type TEXT,
+                country TEXT,
+                availability_items_count BIGINT,
+                ordered_items_count BIGINT,
+                warehouses_count BIGINT,
+                item_price BIGINT,
+                goods_sold_count BIGINT,
+                item_rate FLOAT8,
+                days_on_sell BIGINT,
+                avg_percent_to_sold BIGINT,
+                returned_items_count INTEGER,
+                potential_revenue BIGINT,
+                total_revenue BIGINT,
+                avg_daily_sales FLOAT8,
+                days_to_sold FLOAT8,
+                item_rate_percent FLOAT8
+            )
+            LOCATION ('pxf://startde-project/vj-volov/seller_items?PROFILE=s3:parquet&SERVER=default')
+            ON ALL
+            FORMAT 'CUSTOM' (FORMATTER='pxfwritable_import')
+            ENCODING 'UTF8';
+        """,
+        split_statements=True,
+    )
 
-start >> submit_task >> sensor_task >> items_datamart >> end
+    # Шаг создания представления unreliable_sellers_view
+    create_unreliable_sellers_report_view = SQLExecuteQueryOperator(
+        task_id="create_unreliable_sellers_report_view",
+        conn_id=GREENPLUM_ID,
+        sql=f"""
+            DROP VIEW IF EXISTS {GP_SCHEMA}.unreliable_sellers_view;
+            CREATE VIEW {GP_SCHEMA}.unreliable_sellers_view AS
+            SELECT 
+                seller,
+                SUM(availability_items_count) AS total_overload_items_count,
+                BOOL_OR(
+                    days_on_sell > 100 
+                    AND availability_items_count > ordered_items_count
+                ) AS is_unreliable
+            FROM {GP_SCHEMA}.seller_items
+            GROUP BY seller;
+        """,
+        split_statements=True,
+    )
+
+    start >> submit_task >> sensor_task >> items_datamart >> create_unreliable_sellers_report_view >> end
