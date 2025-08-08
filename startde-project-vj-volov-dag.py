@@ -10,7 +10,7 @@ K8S_SPARK_NAMESPACE = "de-project"
 K8S_CONNECTION_ID = "kubernetes_karpov"
 GREENPLUM_ID = "greenplume_karpov"
 SUBMIT_NAME = "job_submit"
-GP_SCHEMA = "vj_volov"
+GP_SCHEMA = "vj-volov"
 
 # Билдер для запуска Spark
 def _build_submit_operator(task_id: str, application_file: str, link_dag):
@@ -41,7 +41,7 @@ with DAG(
     dag_id="startde-project-vj-volov-dag",
     default_args=default_args,
     schedule_interval=None,
-    start_date=pendulum.datetime(2025, 8, 7, tz="UTC"),
+    start_date=pendulum.datetime(2025, 8, 8, tz="UTC"),
     tags=["example", "volov"],
     catchup=False,
 ) as dag:
@@ -67,9 +67,9 @@ with DAG(
         task_id="items_datamart",
         conn_id=GREENPLUM_ID,
         sql=f"""
-            CREATE SCHEMA IF NOT EXISTS {GP_SCHEMA};
-            DROP EXTERNAL TABLE IF EXISTS {GP_SCHEMA}.seller_items CASCADE;
-            CREATE EXTERNAL TABLE {GP_SCHEMA}.seller_items (
+            CREATE SCHEMA IF NOT EXISTS "{GP_SCHEMA}";
+            DROP EXTERNAL TABLE IF EXISTS "{GP_SCHEMA}".seller_items CASCADE;
+            CREATE EXTERNAL TABLE "{GP_SCHEMA}".seller_items (
                 sku_id BIGINT,
                 title TEXT,
                 category TEXT,
@@ -105,8 +105,8 @@ with DAG(
         task_id="create_unreliable_sellers_report_view",
         conn_id=GREENPLUM_ID,
         sql=f"""
-            DROP VIEW IF EXISTS {GP_SCHEMA}.unreliable_sellers_view;
-            CREATE VIEW {GP_SCHEMA}.unreliable_sellers_view AS
+            DROP VIEW IF EXISTS "{GP_SCHEMA}".unreliable_sellers_view;
+            CREATE VIEW "{GP_SCHEMA}".unreliable_sellers_view AS
             SELECT 
                 seller,
                 SUM(availability_items_count) AS total_overload_items_count,
@@ -114,7 +114,7 @@ with DAG(
                     days_on_sell > 100 
                     AND availability_items_count > ordered_items_count
                 ) AS is_unreliable
-            FROM {GP_SCHEMA}.seller_items
+            FROM "{GP_SCHEMA}".seller_items
             GROUP BY seller;
         """,
         split_statements=True,
@@ -125,8 +125,8 @@ with DAG(
         task_id="create_brands_report_view",
         conn_id=GREENPLUM_ID,
         sql=f"""
-            DROP VIEW IF EXISTS {GP_SCHEMA}.item_brands_view;
-            CREATE VIEW {GP_SCHEMA}.item_brands_view AS
+            DROP VIEW IF EXISTS "{GP_SCHEMA}".item_brands_view;
+            CREATE VIEW "{GP_SCHEMA}".item_brands_view AS
             SELECT 
                 brand,
                 group_type,
@@ -134,7 +134,7 @@ with DAG(
                 SUM(potential_revenue) AS potential_revenue,
                 SUM(total_revenue) AS total_revenue,
                 COUNT(*) AS items_count
-            FROM {GP_SCHEMA}.seller_items
+            FROM "{GP_SCHEMA}".seller_items
             GROUP BY brand, group_type, country;
         """,
         split_statements=True,
