@@ -41,7 +41,7 @@ with DAG(
     dag_id="startde-project-vj-volov-dag",
     default_args=default_args,
     schedule_interval=None,
-    start_date=pendulum.datetime(2024, 9, 10, tz="UTC"),
+    start_date=pendulum.datetime(2025, 8, 7, tz="UTC"),
     tags=["example", "volov"],
     catchup=False,
 ) as dag:
@@ -140,4 +140,7 @@ with DAG(
         split_statements=True,
     )
 
-    start >> submit_task >> sensor_task >> items_datamart >> create_unreliable_sellers_report_view >> create_brands_report_view >> end
+    start >> submit_task >> sensor_task >> items_datamart
+    items_datamart >> create_unreliable_sellers_report_view
+    items_datamart >> create_brands_report_view
+    [create_unreliable_sellers_report_view, create_brands_report_view] >> end
