@@ -104,7 +104,7 @@ CREATE EXTERNAL TABLE "ai-iskakova".seller_items(
         FORMAT 'CUSTOM' (FORMATTER='pxfwritable_import')
         ENCODING 'UTF8';
     """,
+    split_statements=True,
 )
 
-
-    start >> submit_task >> sensor_task >> items_datamart >> end
+start >> submit_task >> sensor_task >> items_datamart >> end
