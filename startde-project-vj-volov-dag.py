@@ -63,10 +63,17 @@ with DAG(
     )
 
 # Шаг создания внешней таблицы Greenplum через SQLExecuteQueryOperator
-    items_datamart = SQLExecuteQueryOperator(
-        task_id="items_datamart",
-        conn_id=GREENPLUM_ID,
-        sql=f"""
+items_datamart = SQLExecuteQueryOperator(
+    task_id="items_datamart",
+    conn_id=GREENPLUM_ID,
+    sql=f"""
+
+DROP EXTERNAL TABLE IF EXISTS "ai-iskakova".seller_items CASCADE;
+CREATE EXTERNAL TABLE "ai-iskakova".seller_items(
+
+
+        CREATE SCHEMA IF NOT EXISTS {GP_SCHEMA};
+
         DROP EXTERNAL TABLE IF EXISTS {GP_SCHEMA}.seller_items;
 
         CREATE EXTERNAL TABLE {GP_SCHEMA}.seller_items (
@@ -96,7 +103,8 @@ with DAG(
         ON ALL
         FORMAT 'CUSTOM' (FORMATTER='pxfwritable_import')
         ENCODING 'UTF8';
-        """,
-    )
+    """,
+)
+
 
     start >> submit_task >> sensor_task >> items_datamart >> end
