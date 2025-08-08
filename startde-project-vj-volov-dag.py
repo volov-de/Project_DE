@@ -120,4 +120,24 @@ with DAG(
         split_statements=True,
     )
 
-    start >> submit_task >> sensor_task >> items_datamart >> create_unreliable_sellers_report_view >> end
+    # Шаг создания представления item_brands_view
+    create_brands_report_view = SQLExecuteQueryOperator(
+        task_id="create_brands_report_view",
+        conn_id=GREENPLUM_ID,
+        sql=f"""
+            DROP VIEW IF EXISTS {GP_SCHEMA}.item_brands_view;
+            CREATE VIEW {GP_SCHEMA}.item_brands_view AS
+            SELECT 
+                brand,
+                group_type,
+                country,
+                SUM(potential_revenue) AS potential_revenue,
+                SUM(total_revenue) AS total_revenue,
+                COUNT(*) AS items_count
+            FROM {GP_SCHEMA}.seller_items
+            GROUP BY brand, group_type, country;
+        """,
+        split_statements=True,
+    )
+
+    start >> submit_task >> sensor_task >> items_datamart >> create_unreliable_sellers_report_view >> create_brands_report_view >> end
