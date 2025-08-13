@@ -7,8 +7,8 @@ from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 
 # Параметры подключения
 K8S_SPARK_NAMESPACE = "de-project"
-K8S_CONNECTION_ID = "kubernetes_karpov"
-GREENPLUM_ID = "greenplume_karpov"
+K8S_CONNECTION_ID = "kubernetes"
+GREENPLUM_ID = "greenplume"
 SUBMIT_NAME = "job_submit"
 GP_SCHEMA = "vj-volov"
 
@@ -38,7 +38,7 @@ default_args = {"owner": "vj-volov",}
 
 # Описание DAG
 with DAG(
-    dag_id="startde-project-vj-volov-dag",
+    dag_id="project-volov-dag",
     default_args=default_args,
     schedule_interval=None,
     start_date=pendulum.datetime(2025, 8, 8, tz="UTC"),
@@ -92,7 +92,7 @@ with DAG(
                 days_to_sold FLOAT8,
                 item_rate_percent FLOAT8
             )
-            LOCATION ('pxf://startde-project/vj-volov/seller_items?PROFILE=s3:parquet&SERVER=default')
+            LOCATION ('pxf://project/volov/seller_items?PROFILE=s3:parquet&SERVER=default')
             ON ALL
             FORMAT 'CUSTOM' (FORMATTER='pxfwritable_import')
             ENCODING 'UTF8';
