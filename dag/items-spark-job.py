@@ -7,8 +7,8 @@ from pyspark.sql import functions as F
 from pyspark.sql.window import Window
 
 # Пути к исходным данным и точке выгрузки отчета
-DATA_PATH = "s3a://startde-raw/raw_items"
-TARGET_PATH = "s3a://startde-project/vj-volov/seller_items"
+DATA_PATH = "s3a://raw/raw_items"
+TARGET_PATH = "s3a://project/vj-volov/seller_items"
 
 # Функция для инициализации SparkSession с параметрами доступа к S3
 def _spark_session():
